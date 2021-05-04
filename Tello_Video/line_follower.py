@@ -1,22 +1,26 @@
 import cv2
 import numpy as np
 from djitellopy import tello
+import time
 
 
 me = tello.Tello()
 me.connect()
 print(me.get_battery())
 me.streamon()
-# me.takeoff()
+me.takeoff()
 
-hsv_Vals = [0, 0, 158, 179, 255, 255]
+#hsv_Vals = [0, 0, 158, 179, 255, 255]
+hsv_Vals = [40, 0, 0, 179, 38, 255]
+
+
 num_sensors = 3
-th_value = 0.3
+th_value = 0.4
 width, height = 480, 360
 sensitivity = 3
-weights = [-25, -15, 0, 15, 25]
-curve = 0
-fSpeed = 10
+weights = [25, 15, 0, -15, -25]
+up_down = 0
+lSpeed = 30
 
 
 def thresholding(img):
@@ -30,7 +34,7 @@ def thresholding(img):
 
 def contours(img_th, img):
     cnt, _ = cv2.findContours(img_th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cx = 0
+    cy = 0
     try:
         biggest = max(cnt, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(biggest)
@@ -41,11 +45,12 @@ def contours(img_th, img):
 
     except:
         pass
-    return cx
+    print(cy)
+    return cy
 
 
 def getSensorOut(imgThresh, num_sensors):
-    imgs = np.hsplit(imgThresh, num_sensors)
+    imgs = np.vsplit(imgThresh, num_sensors)
     pixels = (imgThresh.shape[1]//num_sensors) * imgThresh.shape[0]
     sensor_out = []
     for num, im in enumerate(imgs):
@@ -55,56 +60,54 @@ def getSensorOut(imgThresh, num_sensors):
         else:
             sensor_out.append(0)
         cv2.imshow(str(num), im)
-    print(sensor_out)
+    # print(sensor_out)
 
+    #if sensor_out == [0, 0, 0]:
+        #me.land()
     return sensor_out
 
 
-def send_commands(sensor_out, cx):
-    global curve
+def send_commands(sensor_out):
+    global up_down
+
     # Translation
-    lr = (cx - width//2) // sensitivity
-    lr = int(np.clip(lr, -10, 10))
-
-    if 2 > lr > -2:
-        lr = 0
-
-    # Rotation
     if sensor_out == [1, 0, 0]:
-        curve = weights[0]
+        up_down = weights[0]
     elif sensor_out == [1, 1, 0]:
-        curve = weights[1]
+        up_down = weights[1]
     elif sensor_out == [0, 1, 0]:
-        curve = weights[2]
+        up_down = weights[2]
     elif sensor_out == [0, 1, 1]:
-        curve = weights[3]
+        up_down = weights[3]
     elif sensor_out == [0, 0, 1]:
-        curve = weights[4]
+        up_down = weights[4]
     elif sensor_out == [0, 0, 0]:
-        curve = weights[2]
+        up_down = weights[1]
     elif sensor_out == [1, 1, 1]:
-        curve = weights[2]
+        up_down = weights[2]
     elif sensor_out == [1, 0, 1]:
-        curve = weights[2]
-    print(lr, fSpeed, 0, curve)
-    # me.send_rc_control(lr, fSpeed, 0, curve)
+        up_down = weights[2]
+    print(lSpeed, 0, up_down, 0)
+    me.send_rc_control(lSpeed, 0, up_down, 0)
 
 
 while True:
     cap = me.get_frame_read().frame
     img = cv2.resize(cap, (width, height))
-    img = cv2.flip(img, 0)
+    #img = cv2.flip(img, 0)
 
     imgThresh = thresholding(img)
-    cx = contours(imgThresh, img)
+    #cy = contours(imgThresh, img)
 
     sensor_out = getSensorOut(imgThresh, num_sensors)
-    send_commands(sensor_out, cx)
+    send_commands(sensor_out)
 
     cv2.imshow('Output', img)
-    cv2.imshow('Path', imgThresh)
+    #cv2.imshow('Path', imgThresh)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+me.land()
 cv2.destroyAllWindows()
 
 
