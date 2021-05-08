@@ -8,11 +8,11 @@ me = tello.Tello()
 me.connect()
 print(me.get_battery())
 me.streamon()
-me.takeoff()
+
 
 #hsv_Vals = [0, 0, 158, 179, 255, 255]
-hsv_Vals = [40, 0, 0, 179, 38, 255]
-
+#hsv_Vals = [40, 0, 0, 179, 38, 255]
+hsv_Vals = [0, 160, 11, 179, 255, 255]
 
 num_sensors = 3
 th_value = 0.4
@@ -20,7 +20,8 @@ width, height = 480, 360
 sensitivity = 3
 weights = [25, 15, 0, -15, -25]
 up_down = 0
-lSpeed = 30
+lSpeed = 20
+repeat = False
 
 
 def thresholding(img):
@@ -68,7 +69,10 @@ def getSensorOut(imgThresh, num_sensors):
 
 
 def send_commands(sensor_out):
-    global up_down
+    global up_down, repeat
+
+    if sensor_out != [0, 0, 0]:
+        repeat = False
 
     # Translation
     if sensor_out == [1, 0, 0]:
@@ -81,8 +85,16 @@ def send_commands(sensor_out):
         up_down = weights[3]
     elif sensor_out == [0, 0, 1]:
         up_down = weights[4]
-    elif sensor_out == [0, 0, 0]:
-        up_down = weights[1]
+
+    elif sensor_out == [0, 0, 0] and repeat is False:
+        repeat = True
+        if up_down > 0:
+            up_down = weights[3]
+        elif up_down < 0:
+            up_down = weights[1]
+    elif sensor_out == [0, 0, 0] and repeat is True:
+        pass
+
     elif sensor_out == [1, 1, 1]:
         up_down = weights[2]
     elif sensor_out == [1, 0, 1]:
@@ -91,10 +103,14 @@ def send_commands(sensor_out):
     me.send_rc_control(lSpeed, 0, up_down, 0)
 
 
+takeoff = False
 while True:
     cap = me.get_frame_read().frame
     img = cv2.resize(cap, (width, height))
     #img = cv2.flip(img, 0)
+    if takeoff is False:
+        takeoff = True
+        me.takeoff()
 
     imgThresh = thresholding(img)
     #cy = contours(imgThresh, img)
