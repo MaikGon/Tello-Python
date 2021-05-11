@@ -6,7 +6,7 @@ import time
 
 drone = tello.Tello()
 drone.connect()
-print('Battery: ',drone.get_battery())
+print('Battery: ', drone.get_battery())
 drone.streamon()
 
 
@@ -35,6 +35,7 @@ def getSensorOut(imgThresh, num_sensors):
     imgs = np.vsplit(imgThresh, num_sensors)
     pixels = (imgThresh.shape[1]//num_sensors) * imgThresh.shape[0]
     sensor_out = []
+
     for num, im in enumerate(imgs):
         cnt_pixels = cv2.countNonZero(im)
         if cnt_pixels > th_value*pixels:
@@ -44,8 +45,6 @@ def getSensorOut(imgThresh, num_sensors):
         cv2.imshow(str(num), im)
     # print(sensor_out)
 
-    #if sensor_out == [0, 0, 0]:
-        #drone.land()
     return sensor_out
 
 
@@ -91,7 +90,7 @@ while True:
 
     if takeoff is False:
         takeoff = True
-        #drone.takeoff()
+        drone.takeoff()
         time.sleep(1)
 
     imgThresh = threshold(img)
@@ -104,7 +103,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-#drone.land()
+drone.land()
 cv2.destroyAllWindows()
 
 
