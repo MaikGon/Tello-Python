@@ -4,50 +4,31 @@ from djitellopy import tello
 import time
 
 
-me = tello.Tello()
-me.connect()
-print(me.get_battery())
-me.streamon()
+drone = tello.Tello()
+drone.connect()
+print('Battery: ',drone.get_battery())
+drone.streamon()
 
 
-#hsv_Vals = [0, 0, 158, 179, 255, 255]
-#hsv_Vals = [40, 0, 0, 179, 38, 255]
 hsv_Vals = [0, 160, 11, 179, 255, 255]
 
 num_sensors = 3
-th_value = 0.4
+th_value = 0.1
 width, height = 480, 360
 sensitivity = 3
-weights = [25, 15, 0, -15, -25]
+weights = [20, 15, 0, -15, -20]
 up_down = 0
 lSpeed = 20
 repeat = False
 
 
-def thresholding(img):
+def threshold(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower = np.array([hsv_Vals[0], hsv_Vals[1], hsv_Vals[2]])
     upper = np.array([hsv_Vals[3], hsv_Vals[4], hsv_Vals[5]])
     mask = cv2.inRange(hsv, lower, upper)
 
     return mask
-
-
-def contours(img_th, img):
-    cnt, _ = cv2.findContours(img_th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cy = 0
-    try:
-        biggest = max(cnt, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(biggest)
-        cx = x + w//2
-        cy = y + h//2
-        cv2.drawContours(img, biggest, -1, (255, 255, 0), 7)
-        cv2.circle(img, (cx, cy), 10, (0, 255, 0), cv2.FILLED)
-
-    except:
-        pass
-    print(cy)
-    return cy
 
 
 def getSensorOut(imgThresh, num_sensors):
@@ -64,7 +45,7 @@ def getSensorOut(imgThresh, num_sensors):
     # print(sensor_out)
 
     #if sensor_out == [0, 0, 0]:
-        #me.land()
+        #drone.land()
     return sensor_out
 
 
@@ -74,7 +55,6 @@ def send_commands(sensor_out):
     if sensor_out != [0, 0, 0]:
         repeat = False
 
-    # Translation
     if sensor_out == [1, 0, 0]:
         up_down = weights[0]
     elif sensor_out == [1, 1, 0]:
@@ -99,31 +79,32 @@ def send_commands(sensor_out):
         up_down = weights[2]
     elif sensor_out == [1, 0, 1]:
         up_down = weights[2]
+
     print(lSpeed, 0, up_down, 0)
-    me.send_rc_control(lSpeed, 0, up_down, 0)
+    drone.send_rc_control(lSpeed, 0, up_down, 0)
 
 
 takeoff = False
 while True:
-    cap = me.get_frame_read().frame
+    cap = drone.get_frame_read().frame
     img = cv2.resize(cap, (width, height))
-    #img = cv2.flip(img, 0)
+
     if takeoff is False:
         takeoff = True
-        me.takeoff()
+        #drone.takeoff()
+        time.sleep(1)
 
-    imgThresh = thresholding(img)
-    #cy = contours(imgThresh, img)
+    imgThresh = threshold(img)
 
     sensor_out = getSensorOut(imgThresh, num_sensors)
     send_commands(sensor_out)
 
-    cv2.imshow('Output', img)
-    #cv2.imshow('Path', imgThresh)
+    cv2.imshow('Img', img)
+    #cv2.imshow('Img_thresh', imgThresh)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-me.land()
+#drone.land()
 cv2.destroyAllWindows()
 
 
