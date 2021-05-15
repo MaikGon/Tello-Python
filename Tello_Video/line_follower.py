@@ -29,6 +29,9 @@ repeat = False
 fb = 0
 
 
+### Dodac dzielenie obrazu na 3 i sprawdzac tylko srodkowe ###
+
+
 def threshold(img, thresh):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower = np.array([thresh[0], thresh[1], thresh[2]])
@@ -92,7 +95,7 @@ def distance_control(m_width, m_height, min_val, max_val):
             fb = 0
     else:
         fb = -20
-        
+
 
 def send_commands(sensor_out):
     global up_down, repeat, fb
