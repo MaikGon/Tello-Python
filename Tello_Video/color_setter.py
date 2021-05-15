@@ -7,7 +7,6 @@ from djitellopy import tello
 
 def nothing(x):
     pass
-
 # Load in image
 #image = cv2.imread('1.jpg')
 me = tello.Tello()

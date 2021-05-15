@@ -13,9 +13,9 @@ drone.streamon()
 hsv_Vals_red_line = [0, 160, 11, 179, 255, 255]
 
 # DOSTROIC DO KONTROLI ODLEGLOSCI OD SCIANY
-hsv_Vals_markers = [0, 160, 11, 179, 255, 255]
-distance_control_minV = 0
-distance_control_maxV = 1000
+hsv_Vals_markers = [20, 99, 180, 40, 255, 255]
+distance_control_minV = 40
+distance_control_maxV = 80
 
 
 num_sensors = 3
@@ -24,7 +24,7 @@ width, height = 480, 360
 sensitivity = 3
 weights = [20, 15, 0, -15, -20]
 up_down = 0
-lSpeed = 15
+lSpeed = 20
 repeat = False
 fb = 0
 
@@ -54,11 +54,12 @@ def contours(img_th, img):
         cy = y + h//2
         cv2.drawContours(img, biggest, -1, (255, 255, 0), 7)
         cv2.circle(img, (cx, cy), 10, (0, 255, 0), cv2.FILLED)
-
+        if w >= 25 and h >= 25:
+            return w, h
+        else:
+            return 0, 0
     except:
-        pass
-
-    return w, h
+        return 0, 0
 
 
 def getSensorOut(imgThresh, num_sensors):
@@ -79,21 +80,21 @@ def getSensorOut(imgThresh, num_sensors):
 
 
 def distance_control(m_width, m_height, min_val, max_val):
+    global fb
     param = max([m_width, m_height])
-
-    if param <= min_val:
-        fb = 15
-    elif param >= max_val:
-        pass
-        fb = -15
+    print('param', param)
+    if param != 0:
+        if param <= min_val:
+            fb = 20
+        elif param >= max_val:
+            fb = -20
+        else:
+            fb = 0
     else:
-        fb = 0
+        pass
 
-    return fb
-
-
-def send_commands(sensor_out, dist_fb):
-    global up_down, repeat
+def send_commands(sensor_out):
+    global up_down, repeat, fb
 
     if sensor_out != [0, 0, 0]:
         repeat = False
@@ -110,21 +111,23 @@ def send_commands(sensor_out, dist_fb):
         up_down = weights[4]
 
     elif sensor_out == [0, 0, 0] and repeat is False:
+        fb = 0
         repeat = True
         if up_down > 0:
             up_down = weights[3]
         elif up_down < 0:
             up_down = weights[1]
     elif sensor_out == [0, 0, 0] and repeat is True:
-        pass
+        fb = 0
 
     elif sensor_out == [1, 1, 1]:
         up_down = weights[2]
+        fb = 0
     elif sensor_out == [1, 0, 1]:
         up_down = weights[2]
 
-    print(lSpeed, dist_fb, up_down, 0)
-    drone.send_rc_control(lSpeed, dist_fb, up_down, 0)
+    print(lSpeed, fb, up_down, 0)
+    drone.send_rc_control(lSpeed, fb, up_down, 0)
 
 
 takeoff = False
@@ -143,8 +146,8 @@ while True:
     sensor_out = getSensorOut(imgThresh, num_sensors)
 
     marker_width, marker_height = contours(markerImage, img)
-    dist_fb = distance_control(marker_height, marker_width, distance_control_minV, distance_control_maxV)
-    send_commands(sensor_out, dist_fb)
+    distance_control(marker_height, marker_width, distance_control_minV, distance_control_maxV)
+    send_commands(sensor_out)
 
     cv2.imshow('Img', img)
     # cv2.imshow('Img_thresh', imgThresh)
