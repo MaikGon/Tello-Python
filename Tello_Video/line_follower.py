@@ -24,8 +24,9 @@ width, height = 480, 360
 sensitivity = 3
 weights = [20, 15, 0, -15, -20]
 up_down = 0
-lSpeed = 20
+lSpeed = 15
 repeat = False
+fb = 0
 
 
 def threshold(img, thresh):
@@ -51,6 +52,7 @@ def contours(img_th, img):
 
     except:
         pass
+
     return w, h
 
 
@@ -71,25 +73,21 @@ def getSensorOut(imgThresh, num_sensors):
     return sensor_out
 
 
-
-
 def distance_control(m_width, m_height, min_val, max_val):
-
     param = max([m_width, m_height])
 
     if param <= min_val:
-        pass
-        # lec do przodu
+        fb = 15
     elif param >= max_val:
         pass
-        # lec do tylu
+        fb = -15
     else:
-        pass
-        # jest git, tak trzymaj
+        fb = 0
+
+    return fb
 
 
-
-def send_commands(sensor_out):
+def send_commands(sensor_out, dist_fb):
     global up_down, repeat
 
     if sensor_out != [0, 0, 0]:
@@ -120,8 +118,8 @@ def send_commands(sensor_out):
     elif sensor_out == [1, 0, 1]:
         up_down = weights[2]
 
-    print(lSpeed, 0, up_down, 0)
-    drone.send_rc_control(lSpeed, 0, up_down, 0)
+    print(lSpeed, dist_fb, up_down, 0)
+    drone.send_rc_control(lSpeed, dist_fb, up_down, 0)
 
 
 takeoff = False
@@ -138,14 +136,13 @@ while True:
     markerImage = threshold(img, hsv_Vals_markers)
 
     sensor_out = getSensorOut(imgThresh, num_sensors)
-    send_commands(sensor_out)
 
     marker_width, marker_height = contours(markerImage, img)
-    distance_control(marker_height, marker_width, distance_control_minV, distance_control_maxV)
-
+    dist_fb = distance_control(marker_height, marker_width, distance_control_minV, distance_control_maxV)
+    send_commands(sensor_out, dist_fb)
 
     cv2.imshow('Img', img)
-    #cv2.imshow('Img_thresh', imgThresh)
+    # cv2.imshow('Img_thresh', imgThresh)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
