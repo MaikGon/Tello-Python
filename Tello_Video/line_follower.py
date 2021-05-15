@@ -91,7 +91,8 @@ def distance_control(m_width, m_height, min_val, max_val):
         else:
             fb = 0
     else:
-        pass
+        fb = -20
+        
 
 def send_commands(sensor_out):
     global up_down, repeat, fb
