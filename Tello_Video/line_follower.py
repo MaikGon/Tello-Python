@@ -41,9 +41,14 @@ def threshold(img, thresh):
 def contours(img_th, img):
     cnt, _ = cv2.findContours(img_th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(img, cnt, -1, (255, 255, 0), 7)
-    cx = 0
+    square_cnt = []
+    for c in cnt:
+        xt, yt, wt, ht = cv2.boundingRect(c)
+        if wt == ht:
+            square_cnt.append(c)
+
     try:
-        biggest = max(cnt, key=cv2.contourArea)
+        biggest = max(square_cnt, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(biggest)
         cx = x + w//2
         cy = y + h//2
