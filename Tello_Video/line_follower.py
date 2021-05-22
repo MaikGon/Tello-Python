@@ -10,10 +10,9 @@ drone.connect()
 print('Battery: ', drone.get_battery())
 drone.streamon()
 
-vid = VideoOut("out", 'mp4', 480, 360, 30)
+vid = VideoOut("out3", 'mp4', 480, 360, 30)
 hsv_Vals_red_line = [0, 160, 11, 179, 255, 255]
 
-# DOSTROIC DO KONTROLI ODLEGLOSCI OD SCIANY
 hsv_Vals_markers = [20, 99, 180, 40, 255, 255]
 distance_control_minV = 40
 distance_control_maxV = 80
@@ -23,14 +22,11 @@ num_sensors = 3
 th_value = 0.1
 width, height = 480, 360
 sensitivity = 3
-weights = [20, 15, 0, -15, -20]
+weights = [20, 15, 0, -20, -25]
 up_down = 0
 lSpeed = 20
 repeat = False
 fb = 0
-
-
-### Dodac dzielenie obrazu na 3 i sprawdzac tylko srodkowe ###
 
 
 def threshold(img, thresh):
