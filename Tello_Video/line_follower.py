@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from djitellopy import tello
 import time
+from video_mod import VideoOut
 
 
 drone = tello.Tello()
@@ -9,7 +10,7 @@ drone.connect()
 print('Battery: ', drone.get_battery())
 drone.streamon()
 
-
+vid = VideoOut("out", 'mp4', 480, 360, 30)
 hsv_Vals_red_line = [0, 160, 11, 179, 255, 255]
 
 # DOSTROIC DO KONTROLI ODLEGLOSCI OD SCIANY
@@ -66,8 +67,15 @@ def contours(img_th, img):
 
 
 def getSensorOut(imgThresh, num_sensors):
-    imgs = np.vsplit(imgThresh, num_sensors)
-    pixels = (imgThresh.shape[1]//num_sensors) * imgThresh.shape[0]
+    # horizontal
+    img_copy = imgThresh.copy()
+    imgs_horizontal = np.hsplit(img_copy, 5)
+    central_imgs = [imgs_horizontal[1], imgs_horizontal[2], imgs_horizontal[3]]
+    final_img = cv2.hconcat(central_imgs)
+
+    #vertical
+    imgs = np.vsplit(final_img, num_sensors)
+    pixels = (final_img.shape[1]//num_sensors) * final_img.shape[0]
     sensor_out = []
 
     for num, im in enumerate(imgs):
@@ -138,6 +146,7 @@ takeoff = False
 while True:
     cap = drone.get_frame_read().frame
     img = cv2.resize(cap, (width, height))
+    img_to_show = img.copy()
 
     if takeoff is False:
         takeoff = True
@@ -153,12 +162,16 @@ while True:
     distance_control(marker_height, marker_width, distance_control_minV, distance_control_maxV)
     send_commands(sensor_out)
 
+    # record video
+    vid.write_frame(img_to_show)
+
     cv2.imshow('Img', img)
     # cv2.imshow('Img_thresh', imgThresh)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 drone.land()
+vid.close()
 cv2.destroyAllWindows()
 
 
