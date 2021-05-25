@@ -1,4 +1,0 @@
-command
-takeoff
-delay 3
-land
